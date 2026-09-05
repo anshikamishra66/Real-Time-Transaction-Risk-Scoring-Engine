@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+data/raw/*.csv
+data/raw/*.zip
+data/processed/
+models/artifacts/
+
+.streamlit/

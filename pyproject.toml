@@ -1,0 +1,11 @@
+[project]
+name = "realtime-transaction-risk-scoring-engine"
+version = "1.0.0"
+description = "AI-powered fraud detection and compliance automation for payment transactions."
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+
+[tool.setuptools]
+packages = ["api", "features", "models"]
