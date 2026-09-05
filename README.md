@@ -10,25 +10,23 @@ live.
 
 ```mermaid
 flowchart LR
-    subgraph Client
-        R[Dashboard / API client]
+    R[Dashboard or API client]
+
+    subgraph API[FastAPI service]
+        EP[POST score-transaction]
+        FS[Live FeatureStore - per-account rolling state]
+        RE[Rules Engine - hard compliance rules]
+        AC[Action logic - approve, review, or hold]
     end
 
-    subgraph API["FastAPI (api/)"]
-        EP["POST /score-transaction"]
-        FS["Live FeatureStore\n(per-account rolling state)"]
-        RE["Rules Engine\n(hard compliance rules)"]
-        AC["Action logic\napprove / review / hold"]
+    subgraph ML[Models]
+        SUP[XGBoost classifier - supervised]
+        ANO[Isolation Forest - unsupervised]
+        ENS[Ensemble - weighted 0 to 100 score]
+        SHAPX[SHAP explainer - medium plus tier only]
     end
 
-    subgraph ML["Models (models/)"]
-        SUP["XGBoost classifier\n(supervised)"]
-        ANO["Isolation Forest\n(unsupervised)"]
-        ENS["Ensemble\n(weighted 0-100 score)"]
-        SHAP["SHAP explainer\n(medium+ tier only)"]
-    end
-
-    DB[("SQLite\ntransaction log / review queue")]
+    DB[SQLite - transaction log and review queue]
 
     R -->|transaction payload| EP
     EP --> FS
@@ -37,10 +35,10 @@ flowchart LR
     ANO --> ENS
     ENS --> RE
     RE --> AC
-    RE -->|tier >= medium| SHAP
+    RE -->|tier is medium or high| SHAPX
     AC --> DB
-    SHAP --> DB
-    DB -->|live feed / review queue / metrics| R
+    SHAPX --> DB
+    DB -->|live feed, review queue, metrics| R
 ```
 
 **Pipeline stages:** `data/` (load + synthesize + split) -> `features/`
