@@ -1,0 +1,31 @@
+FROM python:3.11-slim AS base
+
+WORKDIR /app
+
+# libgomp1 (OpenMP runtime) is required by XGBoost's compiled core at import
+# time. Minimal cloud buildpacks (e.g. Render's native Python runtime) often
+# omit it, which crashes with a native "[bt] ..." backtrace when
+# libxgboost.so tries to load -- not a Python-version issue, a missing
+# system library. build-essential is kept too, matching the root Dockerfile,
+# in case any dependency needs to compile from source.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+# Build a demo-ready dataset and train models at image-build time so the
+# container is immediately runnable with zero setup steps -- no Kaggle
+# credentials required (see data/download_data.py for using the real dataset).
+RUN python scripts/generate_synthetic_data.py --n-rows 250000 \
+    && python data/preprocess.py \
+    && python -m models.train_all
+
+# API-only image for hosts like Render that expose a single $PORT per
+# service -- the dashboard is deployed separately (e.g. Streamlit Cloud) and
+# points its "API base URL" at wherever this container ends up running.
+CMD ["sh", "-c", "uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
